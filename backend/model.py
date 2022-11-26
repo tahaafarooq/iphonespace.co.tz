@@ -39,13 +39,15 @@ class Products(db.Model):
     product_seller = db.Column(db.String())
     product_category = db.Column(db.String())
     product_price = db.Column(db.String())
+    product_description = db.Column(db.String())
     seller_location = db.Column(db.String())
 
-    def __init__(self, product_name, product_seller, product_category, product_price, seller_location):
+    def __init__(self, product_name, product_seller, product_category, product_price, product_description, seller_location):
         self.product_name = product_name
         self.product_seller = product_seller
         self.product_category = product_category
         self.product_price = product_price
+        self.product_description = product_description
         self.seller_location = seller_location
 
     def __repr__(self):

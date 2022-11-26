@@ -36,13 +36,13 @@ def registration_route():
         check_user = Users.query.filter_by(email=email).first()
 
         if check_user is not None:
-            return jsonify({"status": False, "message": "User Exists"})
+            return jsonify({"success": False, "message": "User Exists"})
         else:
-            reg_user = Users(email, password, location, role, phone_number)
+            reg_user = Users(email=email, password=password, location=location, role=role, phone_number=phone_number)
             db.session.add(reg_user)
             db.commit()
 
-            return jsonify({"status": True, "message": "User Registered"})
+            return jsonify({"success": True, "message": "User Registered"})
 
 
 # login route
@@ -53,6 +53,9 @@ def login_route():
         email = data["email"]
         password = data["password"]
 
-        pass
+        check_user = Users.query.filter_by(email=email).first()
+
+        if check_user is not None:
+            password = Users.check_hash(password)
 
 
