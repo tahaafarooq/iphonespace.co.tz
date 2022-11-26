@@ -13,6 +13,7 @@ class Users(db.Model):
     role = db.Column(db.String())
     location = db.Column(db.String())
     phone_number = db.Column(db.String(), unique=True)
+    duuid = db.Column(db.String())
 
     def set_hash(self, hash):
         self.password = generate_password_hash(hash, "sha256")
@@ -20,15 +21,16 @@ class Users(db.Model):
     def check_hash(self, hash):
         return check_password_hash(self.password, hash)
 
-    def __init(self, email, password, role, location, phone_number):
+    def __init(self, email, password, role, location, phone_number, duuid):
         self.email = email
         self.password = password
         self.role = role
         self.location = location
         self.phone_number = phone_number
+        self.duuid = duuid
 
     def __repr__(self):
-        return f"{self.email}:{self.password}:{self.role}:{self.location}:{self.phone_number}"
+        return f"{self.email}:{self.password}:{self.role}:{self.location}:{self.phone_number}:{self.duuid}"
 
 
 class Products(db.Model):
