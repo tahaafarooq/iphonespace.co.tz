@@ -5,12 +5,14 @@ from datetime import datetime, timedelta
 from functools import wraps
 from os import urandom
 
+import requests
 import uuid
 import json
 import jwt
 
 app = Flask(__name__)
 app.secret_key = urandom(12)
+db_backup_file = "./database.db"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads/'
@@ -152,6 +154,15 @@ def request_product():
         db.session.commit()
 
         return jsonify({"success": True, "message": "Request Sent Successful!"}), 203
+
+
+@app.route("/backup/ipfs", methods=["GET"])
+def backup_IPFS():
+    with open("backend/database.db", "rb") as db:
+        headers = {"Content-Type": "application/x-sqlite3", "Authorization": "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDA2MTRFODAwMDJCZTMzRmFkMUY3MmYzMDFiZDdkMDVlZDgwMEI5RUIiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2Njk0OTIxNjI2MTAsIm5hbWUiOiJwZXd0b2tlbiJ9.b6LYEqysM65FZl03xGtnnUOI8l39QQorREqxJjRoZRw", "X-NAME": "database.db"}
+        req = requests.post("https://api.web3.storage/upload", headers=headers, files={'backup': db})
+
+        return jsonify({"status_code": req.status_code, "text": req.text})
 
 
 @app.route("/")
