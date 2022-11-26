@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify, abort, make_response
 from model import Users, Products, ProductRequest, db
+from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
 from functools import wraps
 from os import urandom
 
 import uuid
+import json
 import jwt
 
 app = Flask(__name__)
@@ -44,18 +46,18 @@ def token_required(f):
 
 
 # creating database tables
-@app.before_first_request()
+@app.before_first_request
 def create_tables():
     db.create_all()
 
 
 # registration route
-@app.route("/registration", methods=["POST"])
+@app.route("/register", methods=["POST"])
 def registration_route():
     if request.method == "POST":
         data = request.get_json()
         email = data['email']
-        password = Users.set_password(data['password'])
+        password = generate_password_hash(data['password'], 'sha256')
         location = data['location']
         role = data['role']
         phone_number = data['phone_number']
@@ -68,9 +70,9 @@ def registration_route():
         else:
             reg_user = Users(email=email, password=password, location=location, role=role, phone_number=phone_number, duuid=did)
             db.session.add(reg_user)
-            db.commit()
+            db.session.commit()
 
-            return jsonify({"success": True, "message": "User Registered"})
+            return jsonify({"success": True, "message": "User Registered successful!"})
 
 
 # login route
@@ -104,6 +106,58 @@ def login_route():
             return jsonify({'success': False, 'message': 'Could not verify!'}), 401
 
 
+# product information route
+@app.route("/product/<name>", methods=["GET"])
+def get_product(name):
+    check_product = Products.query.filter_by(product_name=name).first()
+
+    if check_product is not None:
+        data = json.dumps({
+            "name": name,
+            "seller": check_product.product_seller,
+            "category": check_product.product_category,
+            "price": check_product.product_price,
+            "description": check_product.product_description,
+            "location": check_product.seller_location
+        })
+
+        return data, 202
+
+    else:
+        return jsonify({"success": False, "message": "Unable To Fetch Product"})
 
 
+# list products route
+@app.route("/products/list", methods=["GET"])
+def list_products():
+    products = Products.query.all()
 
+    return jsonify({"products": products})
+
+
+# request a product route
+@app.route("/request/product", methods=["POST"])
+def request_product():
+    if request.method == "POST":
+        data = request.get_json()
+        token = jwt.decode(data['token'], app.secret_key)
+        user = Users.query.filter_by(duuid=token).first()
+        user = user.email
+        request_message = data['message']
+        time = datetime.now()
+
+        update = ProductRequest(request_msg=request_message, user=user, time=time)
+
+        db.session.add(update)
+        db.session.commit()
+
+        return jsonify({"success": True, "message": "Request Sent Successful!"}), 203
+
+
+@app.route("/")
+def index():
+    return "WELCOME"
+
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', debug=True)
