@@ -84,9 +84,25 @@ def login_route():
         check_user = Users.query.filter_by(email=email).first()
 
         if check_user is not None and check_user.check_hash(password) and check_user.role == "seller":
-            pass
+            token = jwt.encode({
+                "UUID": check_user.duuid,
+                "role": check_user.role,
+                "exp": datetime.utcnow() + timedelta(minutes=30)
+            }, app.secret_key)
+
+            return jsonify({'success': True, 'token': token.decode('utf-8')}), 201
+
         elif check_user is not None and check_user.check_hash(password) and check_user.role == "buyer":
-            pass
+            token = jwt.encode({
+                "UUID": check_user.duuid,
+                "role": check_user.role,
+                "exp": datetime.utcnow() + timedelta(minutes=30)
+            }, app.secret_key)
+
+            return jsonify({'success': True, 'token': token.decode('utf-8')}), 201
+        else:
+            return jsonify({'success': False, 'message': 'Could not verify!'}), 401
+
 
 
 
