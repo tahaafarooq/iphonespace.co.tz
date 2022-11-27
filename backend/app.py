@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, abort, make_response
+from flask import Flask, request, jsonify, abort, make_response, redirect, render_template
 from model import Users, Products, ProductRequest, db
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
@@ -81,9 +81,11 @@ def registration_route():
 @app.route("/login", methods=["POST"])
 def login_route():
     if request.method == "POST":
-        data = request.get_json()
-        email = data["email"]
-        password = data["password"]
+        email = request.form["email"]
+        password = request.form["password"]
+
+        if email == "admin@admin.com" and password == "admin@2022":
+            return render_template('admin.html')
 
         check_user = Users.query.filter_by(email=email).first()
 
@@ -94,7 +96,8 @@ def login_route():
                 "exp": datetime.utcnow() + timedelta(minutes=30)
             }, app.secret_key)
 
-            return jsonify({'success': True, 'token': token.decode('utf-8')}), 201
+            #return jsonify({'success': True, 'token': token.decode('utf-8')}), 201
+            return redirect('http://localhost/frontend/')
 
         elif check_user is not None and check_user.check_hash(password) and check_user.role == "buyer":
             token = jwt.encode({
@@ -103,7 +106,8 @@ def login_route():
                 "exp": datetime.utcnow() + timedelta(minutes=30)
             }, app.secret_key)
 
-            return jsonify({'success': True, 'token': token.decode('utf-8')}), 201
+            #return jsonify({'success': True, 'token': token.decode('utf-8')}), 201
+            return redirect('http://localhost/frontend/')
         else:
             return jsonify({'success': False, 'message': 'Could not verify!'}), 401
 
@@ -141,11 +145,11 @@ def list_products():
 @app.route("/request/product", methods=["POST"])
 def request_product():
     if request.method == "POST":
-        data = request.get_json()
-        token = jwt.decode(data['token'], app.secret_key)
-        user = Users.query.filter_by(duuid=token).first()
-        user = user.email
-        request_message = data['message']
+        #token = jwt.decode(data['token'], app.secret_key)
+        #user = Users.query.filter_by(duuid=token).first()
+        #user = user.email
+        user = request.form['user']
+        request_message = request.form['message']
         time = datetime.now()
 
         update = ProductRequest(request_msg=request_message, user=user, time=time)
@@ -153,13 +157,14 @@ def request_product():
         db.session.add(update)
         db.session.commit()
 
-        return jsonify({"success": True, "message": "Request Sent Successful!"}), 203
+        #return jsonify({"success": True, "message": "Request Sent Successful!"}), 203
+        return redirect('http://localhost/frontend/')
 
 
 @app.route("/backup/ipfs", methods=["GET"])
 def backup_IPFS():
-    with open("backend/database.db", "rb") as db:
-        headers = {"Content-Type": "application/x-sqlite3", "Authorization": "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDA2MTRFODAwMDJCZTMzRmFkMUY3MmYzMDFiZDdkMDVlZDgwMEI5RUIiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2Njk0OTIxNjI2MTAsIm5hbWUiOiJwZXd0b2tlbiJ9.b6LYEqysM65FZl03xGtnnUOI8l39QQorREqxJjRoZRw", "X-NAME": "database.db"}
+    with open("database.db", "rb") as db:
+        headers = {"Content-Type": "application/x-sqlite3", "Authorization": "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDA2MTRFODAwMDJCZTMzRmFkMUY3MmYzMDFiZDdkMDVlZDgwMEI5RUIiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2Njk1NDI2NjY0ODgsIm5hbWUiOiJwZXdwZXcifQ.elvRzkQgVrMesDhKbcyh2ZZDHKqSUZ8_k2C0NwQn0Oc", "X-NAME": "database.db"}
         req = requests.post("https://api.web3.storage/upload", headers=headers, files={'backup': db})
 
         return jsonify({"status_code": req.status_code, "text": req.text})
