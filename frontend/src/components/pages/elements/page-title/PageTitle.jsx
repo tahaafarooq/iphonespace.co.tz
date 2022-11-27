@@ -14,7 +14,6 @@ const PageTitle = ({preTitle,title,children}) => {
                         </h2>
                     </div>
                 {/*  Page title actions  */}
-
                     <div className="col-auto ms-auto d-print-none">
                         <div className="btn-list">
                             {children}
